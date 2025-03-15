@@ -3,13 +3,14 @@
 /**
  * 创建Vue实例
  */
-var Vm = new Vue({
+let Vm = new Vue({
     el: "#root",
     data: {
         consoleData: [], // 控制台日志
         messageData: [], // 消息记录
         instance: WebSocket, // ws instance
         address: 'ws://127.0.0.1:9501', // 链接地址
+        parameters: [{key: '', val: ''}],
         alert: {
             class: 'success',
             state: false,
@@ -27,10 +28,11 @@ var Vm = new Vue({
         connected: false,
         recvPause: false
     },
-    created: function created () {
+    created: function created() {
         this.canUseH5WebSocket()
-        var address = localStorage.getItem('address');
+        let address = localStorage.getItem('address');
         if (typeof address === 'string') this.address = address
+        this.parameters = JSON.parse(localStorage.getItem('parameters')) || [{key: '', val: ''}]
         window.onerror = function (ev) {
             console.warn(ev)
         }
@@ -52,50 +54,68 @@ var Vm = new Vue({
         }
     },
     methods: {
-        showTips: function showTips (className, content) {
+        addParameter() {
+            this.parameters.push({key: '', val: ''});
+        },
+        deleteParameter(index) {
+            if (this.parameters.length > 1) {
+                this.parameters.splice(index, 1);
+            }
+        },
+        showTips: function showTips(className, content) {
             clearTimeout(this.alert.timer);
-            this.alert.state   = false;
-            this.alert.class   = className;
+            this.alert.state = false;
+            this.alert.class = className;
             this.alert.content = content;
-            this.alert.state   = true;
-            this.alert.timer   = setTimeout(function () {
+            this.alert.state = true;
+            this.alert.timer = setTimeout(function () {
                 Vm.alert.state = false;
             }, 3000);
         },
         autoWsConnect: function () {
             try {
-                if (this.connected === false){
+                if (this.connected === false) {
                     localStorage.setItem('address', this.address)
-                    var wsInstance = new WebSocket(this.address);
-                    var _this      = Vm
-                    wsInstance.onopen    = function (ev) {
+                    localStorage.setItem('parameters', JSON.stringify(this.parameters))
+                    // 将参数对象转换为查询字符串
+                    const paramsStr = this.parameters
+                        // 过滤空行
+                        .filter(param => param.key && param.val)
+                        .map(param =>
+                            `${encodeURIComponent(param.key)}=${encodeURIComponent(param.val)}`
+                        )
+                        .join('&');
+                    // 条件拼接地址
+                    let wsInstance = new WebSocket(paramsStr ? `${this.address}?${paramsStr}` : this.address);
+                    let _this = Vm
+                    wsInstance.onopen = function (ev) {
                         console.warn(ev)
                         _this.connected = true
-                        var service     = _this.instance.url.replace('ws://', '').replace('wss://', '');
-                        service         = (service.substring(service.length - 1) === '/') ? service.substring(0, service.length - 1) : service;
+                        let service = _this.instance.url.replace('ws://', '').replace('wss://', '');
+                        service = (service.substring(service.length - 1) === '/') ? service.substring(0, service.length - 1) : service;
                         _this.writeAlert('success', 'OPENED => ' + service);
                     }
-                    wsInstance.onclose   = function (ev) {
+                    wsInstance.onclose = function (ev) {
                         console.warn(ev)
                         _this.autoSend = false;
                         clearInterval(_this.autoTimer);
                         _this.connected = false;
                         _this.writeAlert('danger', 'CLOSED => ' + _this.closeCode(ev.code));
                     }
-                    wsInstance.onerror   = function (ev) {
+                    wsInstance.onerror = function (ev) {
                         console.warn(ev)
                         _this.writeConsole('danger', '发生错误 请打开浏览器控制台查看')
                     }
                     wsInstance.onmessage = function (ev) {
                         console.warn(ev)
                         if (!_this.recvPause) {
-                            var data = ev.data
+                            let data = ev.data
                             if (_this.recvClean) _this.messageData = [];
                             _this.writeNews(0, data);
                         }
                     }
-                    this.instance        = wsInstance;
-                }else {
+                    this.instance = wsInstance;
+                } else {
                     this.instance.close(1000, 'Active closure of the user')
                 }
             } catch (err) {
@@ -104,12 +124,12 @@ var Vm = new Vue({
             }
         },
         autoHeartBeat: function () {
-            var _this = Vm
+            let _this = Vm
             if (_this.autoSend === true) {
                 _this.autoSend = false;
                 clearInterval(_this.autoTimer);
             } else {
-                _this.autoSend  = true
+                _this.autoSend = true
                 _this.autoTimer = setInterval(function () {
                     _this.writeConsole('info', '循环发送: ' + _this.heartBeatContent)
                     _this.sendData(_this.heartBeatContent)
@@ -150,13 +170,12 @@ var Vm = new Vue({
         canUseH5WebSocket: function () {
             if ('WebSocket' in window) {
                 this.writeAlert('success', '初始化完成')
-            }
-            else {
+            } else {
                 this.writeAlert('danger', '当前浏览器不支持 H5 WebSocket 请更换浏览器')
             }
         },
         closeCode: function (code) {
-            var codes = {
+            let codes = {
                 1000: '1000 CLOSE_NORMAL',
                 1001: '1001 CLOSE_GOING_AWAY',
                 1002: '1002 CLOSE_PROTOCOL_ERROR',
@@ -174,13 +193,13 @@ var Vm = new Vue({
                 1014: '1014 CLOSE_RETAIN',
                 1015: '1015 TLS_HANDSHAKE'
             }
-            var error = codes[code];
+            let error = codes[code];
             if (error === undefined) error = '0000 UNKNOWN_ERROR 未知错误';
             return error;
         },
         sendData: function (raw) {
-            var _this = Vm
-            var data  = raw
+            let _this = Vm
+            let data = raw
             if (typeof data === 'object') {
                 data = _this.content
             }
@@ -193,13 +212,16 @@ var Vm = new Vue({
                 throw err;
             }
         },
-        scrollOver: function scrollOver (e) {
+        scrollOver: function scrollOver(e) {
             if (e) {
                 e.scrollTop = e.scrollHeight;
             }
         },
         cleanMessage: function () {
             this.messageData = [];
+        },
+        clearCache: function () {
+            localStorage.clear();
         }
     }
 });
