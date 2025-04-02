@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="x-ua-compatible" content="IE=edge">
-    <title>WebSocket在线测试工具</title>
+    <title>WebSocket 在线测试工具</title>
     <meta name="description" content="WebSocket在线开发调试测试工具，支持ws和wss。">
     <meta name="keywords" content="websocket,ws,wss">
     <link rel="stylesheet" href="static/css/bootstrap.min.css">
@@ -16,25 +16,22 @@
 <body class="dark-theme bg-dark text-light">
 <div id="root">
     <!-- 过渡动效警告框 -->
-    <template>
-        <transition name="slide-fade">
-            <div class="alert ws-alert monospace" :class=" 'alert-' + alert.class " v-if="alert.state">
-                {{alert.content}}
-            </div>
-        </transition>
-    </template>
+    <Transition name="slide-fade">
+        <div class="alert ws-alert monospace" :class=" 'alert-' + alert.class " v-if="alert.state">
+            {{alert.content}}
+        </div>
+    </Transition>
     <!-- 头部导航 -->
     <nav class="navbar navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand monospace" href="javascript:void(0)">
-                <span>WebSocket</span>
+                <span>WebSocket </span>
                 <small>在线测试工具</small>
             </a>
         </div>
     </nav>
     <!-- 主体内容 -->
-    <template>
-        <div class="container py-3 main-container">
+    <div class="container py-3 main-container">
         <div class="row monospace h-100">
             <div class="col-sm-12">
                 <div class="card bg-dark text-light h-100">
@@ -46,7 +43,7 @@
                                 <div class="col-sm-12 col-md-5">
                                     <!-- 服务设置 -->
                                     <div class="col-sm-12">
-                                        <h5 class="card-title">服务器配置 状态: {{ instance.readyState | rStatus }}</h5>
+                                        <h5 class="card-title">服务器配置 状态: {{ rStatus(instance.readyState) }}</h5>
                                         <hr class="divider divider-dashed">
                                         <!-- 连接地址 -->
                                         <div class="card-text">
@@ -146,20 +143,20 @@
                                 <div class="col-sm-12 col-md-7">
                                     <!-- 消息记录 -->
                                     <div class="col-sm-12">
-                                        <h5 class="card-title" style="display: inline">消息记录</h5>
-                                        <a href="javascript:void(0);" @click="cleanMessage">清空消息</a>
-                                        <a href="javascript:void(0);" @click="clearCache">清空缓存</a>
+                                        <h5 class="card-title mr-2" style="display: inline">消息记录</h5>
+                                        <a class="mr-2" href="javascript:void(0);" @click="cleanMessage">清空消息</a>
+                                        <a class="mr-2" href="javascript:void(0);" @click="clearCache">清空缓存</a>
                                         <hr class="divider divider-dashed">
                                         <div>
-                                            <div class="custom-control custom-checkbox inline-flex mt-2">
+                                            <div class="custom-control custom-checkbox inline-flex mt-2 mr-2">
                                             <input type="checkbox" class="custom-control-input" id="recvClean" v-model="recvClean" :disabled="!connected">
                                             <label class="custom-control-label" for="recvClean">收包清空记录</label>
                                         </div>
-                                        <div class="custom-control custom-checkbox inline-flex mt-2">
+                                        <div class="custom-control custom-checkbox inline-flex mt-2 mr-2">
                                             <input type="checkbox" class="custom-control-input" id="recvDecode" v-model="recvDecode" :disabled="!connected">
                                             <label class="custom-control-label" for="recvDecode">收包JSON解码</label>
                                         </div>
-                                        <div class="custom-control custom-checkbox inline-flex mt-2">
+                                        <div class="custom-control custom-checkbox inline-flex mt-2 mr-2">
                                             <input type="checkbox" class="custom-control-input" id="recvPause" v-model="recvPause" :disabled="!connected">
                                             <label class="custom-control-label" for="recvPause">暂停接收</label>
                                         </div>
@@ -167,10 +164,10 @@
                                         <hr class="divider divider-dashed">
                                         <div class="card-text message-box bg-dark" id="message-box">
                                             <template v-for="item in messageData">
-                                                <div class="mb-4" :class="{ 'text-left' : item.direction , 'text-left' : !item.direction }">
+                                                <div class="mb-4" class="text-left">
                                                     <strong><span :class="{'text-success' : item.direction , 'text-primary' : !item.direction}">{{item.direction ? '发送' : '收到'}}消息</span> {{item.time}}</strong>
                                                     <div class="monospace" v-if="!recvDecode"> {{ item.content }}</div>
-                                                    <div class="monospace" v-html='JSON.format(item.content)' v-if="recvDecode"></div>
+                                                    <div class="monospace" v-html='recvDecode ? JSON.format(item.content) : ""'></div>
                                                 </div>
                                             </template>
                                         </div>
@@ -199,7 +196,7 @@
     window.addEventListener('load', adjustHeight);
     window.addEventListener('resize', adjustHeight);
 </script>
-<script src="static/js/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue"></script>
 <script src="static/js/moment.min.js"></script>
 <script src="static/js/highlight.min.js"></script>
 <script src="static/js/json.min.js"></script>

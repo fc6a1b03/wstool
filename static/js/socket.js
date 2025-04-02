@@ -3,179 +3,115 @@
 /**
  * 创建Vue实例
  */
-let Vm = new Vue({
-    el: "#root",
-    data: {
-        consoleData: [], // 控制台日志
-        messageData: [], // 消息记录
-        instance: WebSocket, // ws instance
-        address: 'ws://127.0.0.1:9501', // 链接地址
-        parameters: [{key: '', val: ''}],
-        alert: {
+const {createApp, ref, reactive, nextTick} = Vue;
+
+// 状态过滤器
+const rStatus = (value) => {
+    switch (value) {
+        case undefined:
+            return '尚未创建'
+        case 0:
+            return '尚未开启'
+        case 1:
+            return '连接成功'
+        case 2:
+            return '正在关闭'
+        case 3:
+            return '连接关闭'
+        default:
+            return '未知状态'
+    }
+}
+
+const app = createApp({
+    setup() {
+        // 响应式状态
+        const consoleData = ref([]);
+        const messageData = ref([]);
+        const instance = ref(WebSocket);
+        const address = ref('ws://127.0.0.1:9501');
+        const parameters = ref([{key: '', val: ''}]);
+        const alert = reactive({
             class: 'success',
             state: false,
             content: '',
             timer: undefined
-        },
-        content: '',
-        heartBeatSecond: 1,
-        heartBeatContent: 'PING',
-        autoSend: false,
-        autoTimer: undefined,
-        sendClean: false,
-        recvClean: false,
-        recvDecode: false,
-        connected: false,
-        recvPause: false
-    },
-    created: function created() {
-        this.canUseH5WebSocket()
-        let address = localStorage.getItem('address');
-        if (typeof address === 'string') this.address = address
-        this.parameters = JSON.parse(localStorage.getItem('parameters')) || [{key: '', val: ''}]
-        window.onerror = function (ev) {
-            console.warn(ev)
-        }
-    },
-    filters: {
-        rStatus: function (value) {
-            switch (value) {
-                case undefined:
-                    return '尚未创建'
-                case 0 :
-                    return '尚未开启'
-                case 1:
-                    return '连接成功'
-                case 2:
-                    return '正在关闭'
-                case 3:
-                    return '连接关闭'
+        });
+        const content = ref('');
+        const heartBeatSecond = ref(1);
+        const heartBeatContent = ref('PING');
+        const autoSend = ref(false);
+        const autoTimer = ref(undefined);
+        const sendClean = ref(false);
+        const recvClean = ref(false);
+        const recvDecode = ref(false);
+        const connected = ref(false);
+        const recvPause = ref(false);
+
+        // 方法
+        const addParameter = () => {
+            parameters.value.push({key: '', val: ''});
+        };
+
+        const deleteParameter = (index) => {
+            if (parameters.value.length > 1) {
+                parameters.value.splice(index, 1);
             }
-        }
-    },
-    methods: {
-        addParameter() {
-            this.parameters.push({key: '', val: ''});
-        },
-        deleteParameter(index) {
-            if (this.parameters.length > 1) {
-                this.parameters.splice(index, 1);
-            }
-        },
-        showTips: function showTips(className, content) {
-            clearTimeout(this.alert.timer);
-            this.alert.state = false;
-            this.alert.class = className;
-            this.alert.content = content;
-            this.alert.state = true;
-            this.alert.timer = setTimeout(function () {
-                Vm.alert.state = false;
+        };
+
+        const showTips = (className, tipContent) => {
+            clearTimeout(alert.timer);
+            alert.state = false;
+            alert.class = className;
+            alert.content = tipContent;
+            alert.state = true;
+            alert.timer = setTimeout(() => {
+                alert.state = false;
             }, 3000);
-        },
-        autoWsConnect: function () {
-            try {
-                if (this.connected === false) {
-                    localStorage.setItem('address', this.address)
-                    localStorage.setItem('parameters', JSON.stringify(this.parameters))
-                    // 将参数对象转换为查询字符串
-                    const paramsStr = this.parameters
-                        // 过滤空行
-                        .filter(param => param.key && param.val)
-                        .map(param =>
-                            `${encodeURIComponent(param.key)}=${encodeURIComponent(param.val)}`
-                        )
-                        .join('&');
-                    // 条件拼接地址
-                    let wsInstance = new WebSocket(paramsStr ? `${this.address}?${paramsStr}` : this.address);
-                    let _this = Vm
-                    wsInstance.onopen = function (ev) {
-                        console.warn(ev)
-                        _this.connected = true
-                        let service = _this.instance.url.replace('ws://', '').replace('wss://', '');
-                        service = (service.substring(service.length - 1) === '/') ? service.substring(0, service.length - 1) : service;
-                        _this.writeAlert('success', 'OPENED => ' + service);
-                    }
-                    wsInstance.onclose = function (ev) {
-                        console.warn(ev)
-                        _this.autoSend = false;
-                        clearInterval(_this.autoTimer);
-                        _this.connected = false;
-                        _this.writeAlert('danger', 'CLOSED => ' + _this.closeCode(ev.code));
-                    }
-                    wsInstance.onerror = function (ev) {
-                        console.warn(ev)
-                        _this.writeConsole('danger', '发生错误 请打开浏览器控制台查看')
-                    }
-                    wsInstance.onmessage = function (ev) {
-                        console.warn(ev)
-                        if (!_this.recvPause) {
-                            let data = ev.data
-                            if (_this.recvClean) _this.messageData = [];
-                            _this.writeNews(0, data);
-                        }
-                    }
-                    this.instance = wsInstance;
-                } else {
-                    this.instance.close(1000, 'Active closure of the user')
-                }
-            } catch (err) {
-                console.warn(err)
-                this.writeAlert('danger', '创建 WebSocket 对象失败 请检查服务器地址')
+        };
+
+        const scrollOver = (e) => {
+            if (e) {
+                e.scrollTop = e.scrollHeight;
             }
-        },
-        autoHeartBeat: function () {
-            let _this = Vm
-            if (_this.autoSend === true) {
-                _this.autoSend = false;
-                clearInterval(_this.autoTimer);
-            } else {
-                _this.autoSend = true
-                _this.autoTimer = setInterval(function () {
-                    _this.writeConsole('info', '循环发送: ' + _this.heartBeatContent)
-                    _this.sendData(_this.heartBeatContent)
-                }, _this.heartBeatSecond * 1000);
-            }
-        },
-        writeConsole: function (className, content) {
-            this.consoleData.push({
-                content: content,
+        };
+
+        const writeConsole = (className, msgContent) => {
+            consoleData.value.push({
+                content: msgContent,
                 type: className,
                 time: moment().format('HH:mm:ss')
             });
-            this.$nextTick(function () {
-                Vm.scrollOver(document.getElementById('console-box'));
-            })
-        },
-        writeNews: function (direction, content, callback) {
+            nextTick(() => {
+                scrollOver(document.getElementById('console-box'));
+            });
+        };
+
+        const writeNews = (direction, msgContent, callback) => {
             if (typeof callback === 'function') {
-                content = callback(content);
+                msgContent = callback(msgContent);
             }
 
-            this.messageData.push({
+            messageData.value.push({
                 direction: direction,
-                content: content,
+                content: msgContent,
                 time: moment().format('HH:mm:ss')
             });
 
-            this.$nextTick(function () {
-                if (!Vm.recvClean) {
-                    Vm.scrollOver(document.getElementById('message-box'));
+            nextTick(() => {
+                if (!recvClean.value) {
+                    scrollOver(document.getElementById('message-box'));
                 }
-            })
-        },
-        writeAlert: function (className, content) {
-            this.writeConsole(className, content);
-            this.showTips(className, content);
-        },
-        canUseH5WebSocket: function () {
-            if ('WebSocket' in window) {
-                this.writeAlert('success', '初始化完成')
-            } else {
-                this.writeAlert('danger', '当前浏览器不支持 H5 WebSocket 请更换浏览器')
-            }
-        },
-        closeCode: function (code) {
-            let codes = {
+            });
+        };
+
+        const writeAlert = (className, alertContent) => {
+            writeConsole(className, alertContent);
+            showTips(className, alertContent);
+        };
+
+        const closeCode = (code) => {
+            const codes = {
                 1000: '1000 CLOSE_NORMAL',
                 1001: '1001 CLOSE_GOING_AWAY',
                 1002: '1002 CLOSE_PROTOCOL_ERROR',
@@ -192,36 +128,159 @@ let Vm = new Vue({
                 1013: '1013 TRY_AGAIN_LATER',
                 1014: '1014 CLOSE_RETAIN',
                 1015: '1015 TLS_HANDSHAKE'
-            }
+            };
             let error = codes[code];
             if (error === undefined) error = '0000 UNKNOWN_ERROR 未知错误';
             return error;
-        },
-        sendData: function (raw) {
-            let _this = Vm
-            let data = raw
+        };
+
+        const sendData = (raw) => {
+            let data = raw;
             if (typeof data === 'object') {
-                data = _this.content
+                data = content.value;
             }
             try {
-                _this.instance.send(data);
-                _this.writeNews(1, data);
-                if (_this.sendClean && typeof raw === 'object') _this.content = '';
+                instance.value.send(data);
+                writeNews(1, data);
+                if (sendClean.value && typeof raw === 'object') content.value = '';
             } catch (err) {
-                _this.writeAlert('danger', '消息发送失败 原因请查看控制台');
+                writeAlert('danger', '消息发送失败 原因请查看控制台');
                 throw err;
             }
-        },
-        scrollOver: function scrollOver(e) {
-            if (e) {
-                e.scrollTop = e.scrollHeight;
+        };
+
+        const autoHeartBeat = () => {
+            if (autoSend.value === true) {
+                autoSend.value = false;
+                clearInterval(autoTimer.value);
+            } else {
+                autoSend.value = true;
+                autoTimer.value = setInterval(() => {
+                    writeConsole('info', `循环发送: ${heartBeatContent.value}`);
+                    sendData(heartBeatContent.value);
+                }, heartBeatSecond.value * 1000);
             }
-        },
-        cleanMessage: function () {
-            this.messageData = [];
-        },
-        clearCache: function () {
+        };
+
+        const autoWsConnect = () => {
+            try {
+                if (connected.value === false) {
+                    localStorage.setItem('address', address.value);
+                    localStorage.setItem('parameters', JSON.stringify(parameters.value));
+                    // 将参数对象转换为查询字符串
+                    const paramsStr = parameters.value
+                        .filter(param => param.key && param.val)
+                        .map(param =>
+                            `${encodeURIComponent(param.key)}=${encodeURIComponent(param.val)}`
+                        )
+                        .join('&');
+                    // 条件拼接地址
+                    let wsInstance = new WebSocket(paramsStr ? `${address.value}?${paramsStr}` : address.value);
+
+                    wsInstance.onopen = (ev) => {
+                        console.warn(ev);
+                        connected.value = true;
+                        let service = instance.value.url.replace('ws://', '').replace('wss://', '');
+                        service = (service.substring(service.length - 1) === '/') ? service.substring(0, service.length - 1) : service;
+                        writeAlert('success', 'OPENED => ' + service);
+                    };
+
+                    wsInstance.onclose = (ev) => {
+                        console.warn(ev);
+                        autoSend.value = false;
+                        clearInterval(autoTimer.value);
+                        connected.value = false;
+                        writeAlert('danger', 'CLOSED => ' + closeCode(ev.code));
+                    };
+
+                    wsInstance.onerror = (ev) => {
+                        console.warn(ev);
+                        writeConsole('danger', '发生错误 请打开浏览器控制台查看');
+                    };
+
+                    wsInstance.onmessage = (ev) => {
+                        console.warn(ev);
+                        if (!recvPause.value) {
+                            let data = ev.data;
+                            if (recvClean.value) messageData.value = [];
+                            writeNews(0, data);
+                        }
+                    };
+
+                    instance.value = wsInstance;
+                } else {
+                    instance.value.close(1000, 'Active closure of the user');
+                }
+            } catch (err) {
+                console.warn(err);
+                writeAlert('danger', '创建 WebSocket 对象失败 请检查服务器地址');
+            }
+        };
+
+        const canUseH5WebSocket = () => {
+            if ('WebSocket' in window) {
+                writeAlert('success', '初始化完成');
+            } else {
+                writeAlert('danger', '当前浏览器不支持 H5 WebSocket 请更换浏览器');
+            }
+        };
+
+        const cleanMessage = () => {
+            messageData.value = [];
+        };
+
+        const clearCache = () => {
             localStorage.clear();
-        }
+        };
+
+        // 生命周期钩子
+        const init = () => {
+            canUseH5WebSocket();
+            let savedAddress = localStorage.getItem('address');
+            if (typeof savedAddress === 'string') address.value = savedAddress;
+            parameters.value = JSON.parse(localStorage.getItem('parameters')) || [{key: '', val: ''}];
+            window.onerror = (ev) => {
+                console.warn(ev);
+            };
+        };
+
+        init();
+
+        // 返回响应式状态和方法
+        return {
+            consoleData,
+            messageData,
+            instance,
+            address,
+            parameters,
+            alert,
+            content,
+            heartBeatSecond,
+            heartBeatContent,
+            autoSend,
+            autoTimer,
+            sendClean,
+            recvClean,
+            recvDecode,
+            connected,
+            recvPause,
+            rStatus: (value) => rStatus(value),
+            addParameter,
+            deleteParameter,
+            showTips,
+            autoWsConnect,
+            autoHeartBeat,
+            writeConsole,
+            writeNews,
+            writeAlert,
+            canUseH5WebSocket,
+            closeCode,
+            sendData,
+            scrollOver,
+            cleanMessage,
+            clearCache
+        };
     }
 });
+
+app.mount('#root');
