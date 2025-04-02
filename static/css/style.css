@@ -1,1 +1,166 @@
-html{font-size:14px;}pre{font-family:monospace}.monospace{font-family:monospace}.inline-flex{display:inline-flex !important}.card-body{min-height:90vh;padding: 1.25rem 0 0;}.slide-fade-enter-active{transition:all .3s ease}.slide-fade-leave-active{transition:all .8s cubic-bezier(1,.5,.8,1)}.slide-fade-enter,.slide-fade-leave-to{opacity:0;transform:translateX(10px)}.ws-alert{position:absolute;top:2px;right:0;left:0;z-index:65535;margin:auto;max-width:550px;text-align:center}.divider{clear:both;overflow:hidden;margin:1rem auto;height:0}.divider-dashed{border-top:1px dashed #ccc}::-webkit-scrollbar-track-piece{background-color:#f8f8f8}::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{min-height:28px;background-color:#ddd;background-clip:padding-box}::-webkit-scrollbar-thumb:hover{background-color:#bbb}.message-box{max-height:calc(100vh - 220px)}.console-box,.message-box{display:block;overflow:auto;padding:1rem}.console-box{max-height:calc(100vh - 485px)}
+html, body {
+    font-size: 14px;
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+#root {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+pre {
+    font-family: monospace;
+}
+.monospace {
+    font-family: monospace;
+}
+.inline-flex {
+    display: inline-flex !important;
+}
+.card-body {
+    flex: 1;
+    padding: 1.25rem;
+    background-color: #2d2d2d;
+}
+.slide-fade-enter-active {
+    transition: all .3s ease;
+}
+.slide-fade-leave-active {
+    transition: all .8s cubic-bezier(1,.5,.8,1);
+}
+.slide-fade-enter, .slide-fade-leave-to {
+    opacity: 0;
+    transform: translateX(10px);
+}
+.ws-alert {
+    position: absolute;
+    top: 2px;
+    right: 0;
+    left: 0;
+    z-index: 65535;
+    margin: auto;
+    max-width: 550px;
+    text-align: center;
+}
+.divider {
+    clear: both;
+    overflow: hidden;
+    margin: 1rem auto;
+    height: 0;
+}
+.divider-dashed {
+    border-top: 1px dashed #555;
+}
+::-webkit-scrollbar-track-piece {
+    background-color: #2d2d2d;
+}
+::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+}
+::-webkit-scrollbar-thumb {
+    min-height: 28px;
+    background-color: #555;
+    background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+    background-color: #777;
+}
+.message-box, .console-box {
+    display: block;
+    overflow: auto;
+    padding: 1rem;
+    background-color: #2d2d2d;
+    flex: 1;
+    min-height: 200px;
+}
+.card {
+    background-color: #2d2d2d;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 0;
+}
+.main-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 1rem;
+}
+.content-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.form-control {
+    background-color: #3a3a3a;
+    border-color: #555;
+    color: #e0e0e0;
+}
+.form-control:focus {
+    background-color: #3a3a3a;
+    border-color: #007bff;
+    color: #e0e0e0;
+}
+.input-group-text {
+    background-color: #3a3a3a;
+    border-color: #555;
+    color: #e0e0e0;
+}
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+.text-success {
+    color: #28a745 !important;
+}
+.text-primary {
+    color: #007bff !important;
+}
+.text-danger {
+    color: #dc3545 !important;
+}
+.dark-theme label {
+    color: #a0a0a0 !important;
+}
+.dark-theme .form-control::placeholder {
+    color: #707070;
+}
+.dark-theme .card-title {
+    color: #b8b8b8;
+}
+.dark-theme .custom-control-label {
+    color: #a0a0a0 !important;
+}
+
+/* 响应式布局优化 */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+}
+
+/* 确保内容不会过宽 */
+.card-body {
+    flex: 1;
+    padding: 1.25rem;
+    background-color: #2d2d2d;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* 确保导航栏宽度与内容一致 */
+.navbar .container {
+    max-width: 1200px;
+}
